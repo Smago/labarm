@@ -1,0 +1,54 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "VM1Name": {
+            "value": "VM0001",
+            "metadata": {
+                "description": "User name for the Virtual Machine."
+            }
+        },
+        "adminUsername": {
+            "value": "adminuser",
+            "metadata": {
+                "description": "User name for the Virtual Machine."
+            }
+        },
+        "adminPassword": {
+            "value": "-->PleasSecifiedYourP@ssZord1",
+            "metadata": {
+                "description": "Password for the Virtual Machine."
+            }
+        },
+        "VNetname": {
+            "value": "VNet0001",
+            "metadata": {
+                "description": "Management Virtual network name"
+            }
+        },
+        "Vnet1AdresseSpace": {
+            "value": "10.0.0.0/24",
+            "metadata": {
+                "description": "Size of VNet Address Space"
+            }
+        },
+        "Subnet1Name": {
+            "value": "Subnet-1",
+            "metadata": {
+                "description": "Virtual network Subnet name"
+            }
+        },
+        "Subnet1Size": {
+            "value": "10.0.0.0/25",
+            "metadata": {
+                "description": "Subnet1 Size"
+            }
+        },
+        "RDPSourceIP": {
+            "value": "XXX.XXX.XXX.XXX",
+            "metadata": {
+                "description": "Specify Public IP Allow to use RDP protocole to administrate VMs"
+            }
+        }
+    }
+}

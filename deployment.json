@@ -1,0 +1,274 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "VM1Name": {
+            "type": "string",
+            "metadata": {
+                "description": "User name for the Virtual Machine."
+            }
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "User name for the Virtual Machine."
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for the Virtual Machine."
+            }
+        },
+        "VNetname": {
+            "type": "string",
+            "metadata": {
+                "description": "Management Virtual network name"
+            }
+        },
+        "Vnet1AdresseSpace": {
+            "type": "string",
+            "metadata": {
+                "description": "Size of VNet Address Space"
+            }
+        },
+        "Subnet1Name": {
+            "type": "string",
+            "metadata": {
+                "description": "Virtual network Subnet name"
+            }
+        },
+        "Subnet1Size": {
+            "type": "string",
+            "metadata": {
+                "description": "Subnet1 Size"
+            }
+        },
+        "RDPSourceIP": {
+            "type": "string",
+            "metadata": {
+                "description": "Specify Public IP Allow to use RDP protocole to administrate VMs"
+            }
+        }
+    },
+    "variables": {
+        "VMsSize": "Standard_DS2_v2",
+        "OsDisksType": "Standard_LRS",
+        "OSVersion": {
+            "publisher": "MicrosoftWindowsServer",
+            "imageOffer": "WindowsServer",
+            "vmimageSKU": "2012-R2-Datacenter"
+        },
+        "DataDisk": {
+            "Name": {
+                "vm0001": "[concat(parameters('VM1Name'),'dd01')]"
+            },
+            "sku": "Standard_LRS",
+            "Size": "100"
+        },
+        "nicName": {
+            "vm0001": "[concat(parameters('VM1Name'),'ni01')]"
+        },
+        "osDiskName": {
+            "vm0001": "[concat(parameters('VM1Name'),'od01')]"
+        },
+        "nsgName": "NSG0001",
+        "diagnosticStorageAccountName": "[toLower(concat('storage', uniqueString(resourceGroup().id)))]",
+        "publicIPAddressName": "PIP-vm001"
+    },
+    "functions": [],
+    "resources": [
+        {
+            "apiVersion": "2018-08-01",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[variables('nsgName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "Allow-RDP-TCP",
+                        "properties": {
+                            "description": "",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "3389",
+                            "sourceAddressPrefix": "[parameters('RDPSourceIP')]",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 300,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "Allow-HTTPS-TCP",
+                        "properties": {
+                            "description": "",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "443",
+                            "sourceAddressPrefix": "internet",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 350,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2015-06-15",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('publicIPAddressName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic"
+            }
+        },
+        {
+            "apiVersion": "2018-10-01",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[parameters('VNetname')]",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('Vnet1AdresseSpace')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('subnet1Name')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('Subnet1Size')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2019-04-01",
+            "type": "Microsoft.Storage/storageAccounts/",
+            "name": "[variables('diagnosticStorageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "Storage",
+            "properties": {}
+        },
+        {
+            "apiVersion": "2018-11-01",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[concat(variables('nicName').vm0001)]",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', parameters('VNetname'))]",
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('VNetname')),'/subnets/',parameters('subnet1Name'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/disks",
+            "name": "[variables('DataDisk').Name.vm0001]",
+            "apiVersion": "2016-04-30-preview",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "creationData": {
+                    "createOption": "Empty"
+                },
+                "accountType": "[variables('DataDisk').sku]",
+                "diskSizeGB": "[variables('DataDisk').Size]"
+            }
+        },
+        {
+            "apiVersion": "2016-04-30-preview",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[parameters('VM1Name')]",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', variables('nicName').vm0001)]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('diagnosticStorageAccountName'))]",
+                "[concat('Microsoft.Compute/disks/', variables('DataDisk').Name.vm0001)]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('VMsSize')]"
+                },
+                "osProfile": {
+                    "computername": "[parameters('VM1Name')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('OSVersion').publisher]",
+                        "offer": "[variables('OSVersion').imageOffer]",
+                        "sku": "[variables('OSVersion').vmimageSKU]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "[variables('osDiskName').vm0001]",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[variables('OsDisksType')]"
+                        }
+                    },
+                    "dataDisks": [
+                        {
+                            "lun": 0,
+                            "managedDisk": {
+                                "id": "[resourceId('Microsoft.Compute/disks',variables('DataDisk').Name.vm0001)]"
+                            },
+                            "caching": "None",
+                            "createOption": "Attach"
+                        }
+                    ]
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName').vm0001)]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": "true",
+                        "storageUri": "[concat('http://',variables('diagnosticStorageAccountName'),'.blob.core.windows.net')]"
+                    }
+                }
+            },
+            "resources": []
+        }
+    ],
+    "outputs": {}
+}
