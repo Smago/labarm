@@ -57,7 +57,7 @@
         "OSVersion": {
             "publisher": "MicrosoftWindowsServer",
             "imageOffer": "WindowsServer",
-            "vmimageSKU": "2012-R2-Datacenter"
+            "vmimageSKU": "2019-Datacenter"
         },
         "DataDisk": {
             "Name": {
@@ -93,7 +93,7 @@
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "3389",
-                            "sourceAddressPrefix": "[parameters('RDPSourceIP')]",
+                            "sourceAddressPrefixes": ["[parameters('RDPSourceIP')]"],
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
                             "priority": 300,
@@ -101,12 +101,12 @@
                         }
                     },
                     {
-                        "name": "Allow-HTTPS-TCP",
+                        "name": "Allow-HTTP-TCP",
                         "properties": {
                             "description": "",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
-                            "destinationPortRange": "443",
+                            "destinationPortRange": "80",
                             "sourceAddressPrefix": "internet",
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
